@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -29,7 +30,11 @@ public class ProductService {
      */
     @Transactional
     public Collection<ProductReview> getReviewsForProduct(int productId) {
-        Product product = entityManager.find(Product.class, productId);
+//        Product product = entityManager.find(Product.class, productId);
+        //Using psql
+        TypedQuery<Product> query = entityManager.createQuery("FROM Product product JOIN FETCH product.reviews WHERE product_id = :id", Product.class);
+        query.setParameter("id", productId);
+        Product product = query.getSingleResult();
         return product.getReviews();
     }
 
@@ -44,7 +49,15 @@ public class ProductService {
      */
     @Transactional
     public int getAverageRatingForProduct(int productId) {
-        Product product = entityManager.find(Product.class, productId);
+        //Using criteria api
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Product> cq = cb.createQuery(Product.class);
+        Root<Product> from = cq.from(Product.class);
+        from.fetch("reviews");
+        cq.where(cb.equal(from.get("id"), productId));
+        TypedQuery<Product> query = entityManager.createQuery(cq);
+        Product product = query.getSingleResult();
+//        Product product = entityManager.find(Product.class, productId);
         List<ProductReview> reviews = product.getReviews();
         int sum = 0;
         for (ProductReview review : reviews) {
@@ -61,7 +74,10 @@ public class ProductService {
      */
     @Transactional
     public int getOverallAverageRating() {
-            List<Product> products = entityManager.createQuery("FROM Product", Product.class).getResultList();
+        //Using psql
+        TypedQuery<Product> query = entityManager.createQuery("FROM Product product JOIN FETCH product.reviews", Product.class);
+        List<Product> products = query.getResultList();
+//        List<Product> products = entityManager.createQuery("FROM Product", Product.class).getResultList();
         int sum = 0;
         int countOfReviews = 0;
         for (Product product : products) {
