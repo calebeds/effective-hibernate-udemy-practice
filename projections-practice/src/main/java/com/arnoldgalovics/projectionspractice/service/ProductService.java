@@ -2,6 +2,7 @@ package com.arnoldgalovics.projectionspractice.service;
 
 
 import com.arnoldgalovics.projectionspractice.domain.Product;
+import com.arnoldgalovics.projectionspractice.projection.ProductProjection;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +26,9 @@ public class ProductService {
      */
     @Transactional
     public Collection<String> getProductNames() {
-        List<Product> products = entityManager.createQuery("FROM Product", Product.class).getResultList();
-        return products.stream().map(Product::getName).collect(Collectors.toList());
+//        List<Product> products = entityManager.createQuery("FROM Product", Product.class).getResultList();
+        //Using JPQL
+        List<ProductProjection> products = entityManager.createQuery("SELECT NEW com.arnoldgalovics.projectionspractice.projection.ProductProjection(product.name) FROM Product product", ProductProjection.class).getResultList();
+        return products.stream().map(ProductProjection::getName).collect(Collectors.toList());
     }
 }
